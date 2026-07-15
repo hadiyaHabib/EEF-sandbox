@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+gitpython
+docker
+pydantic
+sqlalchemy
+psycopg2-binary
+celery
+redis
