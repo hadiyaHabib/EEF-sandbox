@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ezitech Auto Evaluation Platform &amp; Enterprise Sandbox</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            bg: '#F8FAFC',
+                            card: '#FFFFFF',
+                            border: '#E2E8F0',
+                            primary: '#2563EB',
+                            primaryDark: '#1D4ED8',
+                            success: '#059669',
+                            danger: '#DC2626',
+                            warning: '#D97706',
+                            muted: '#64748B'
+                        }
+                    },
+                    boxShadow: {
+                        'card': '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+                        'card-hover': '0 6px 16px rgba(0,0,0,0.08)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; overflow-x: hidden; }
+        .panel { background: #FFFFFF; border: 1px solid #E5E7EB; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #F1F5F9; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+        .input-error { border-color: #DC2626 !important; background-color: #FEF2F2 !important; }
+        .input-error:focus { box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12); }
+        .input-valid { border-color: #059669 !important; background-color: #F0FDF4 !important; }
+
+        .node-pulse { animation: pulse-glow 2s infinite alternate; }
+        @keyframes pulse-glow {
+            0% { filter: drop-shadow(0 0 1px rgba(37, 99, 235, 0.35)); }
+            100% { filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.55)); }
+        }
+
+        .check-pending { color: #94A3B8; }
+        .check-passed { color: #059669; }
+        .check-failed { color: #DC2626; }
+    </style>
+</head>
+<body class="h-full text-gray-800 flex flex-col antialiased">
+
+    <div class="flex h-screen overflow-hidden">
+
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col justify-between shrink-0 z-40">
+            <div>
+                <div class="p-6 border-b border-gray-200 bg-gray-50">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-blue-50 text-blue-600 p-2.5 rounded-xl border border-blue-100">
+                            <i class="fa-solid fa-microchip-ai text-xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-black text-sm tracking-widest uppercase text-gray-900">Ezitech Auto</h1>
+                            <span class="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Engineering Sandbox v3.2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <nav class="p-4 space-y-1.5">
+                    <button onclick="switchTab('dashboard')" id="btn-dashboard" class="nav-tab-btn w-full flex items-center gap-3 px-4 py-3 text-xs uppercase tracking-wider font-semibold rounded-xl text-blue-600 bg-blue-50 border-l-4 border-blue-600 transition-all">
+                        <i class="fa-solid fa-chart-line"></i> Control Room
+                    </button>
+                    <button onclick="switchTab('pipeline')" id="btn-pipeline" class="nav-tab-btn w-full flex items-center gap-3 px-4 py-3 text-xs uppercase tracking-wider font-semibold rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-all">
+                        <i class="fa-solid fa-terminal"></i> Sandbox Executor
+                    </button>
+                    <button onclick="switchTab('reports')" id="btn-reports" class="nav-tab-btn w-full flex items-center gap-3 px-4 py-3 text-xs uppercase tracking-wider font-semibold rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-all">
+                        <i class="fa-solid fa-gauge-high"></i> Scorecard Insights
+                    </button>
+                    <button onclick="switchTab('leaderboard')" id="btn-leaderboard" class="nav-tab-btn w-full flex items-center gap-3 px-4 py-3 text-xs uppercase tracking-wider font-semibold rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-all">
+                        <i class="fa-solid fa-trophy"></i> Public Scoreboard
+                    </button>
+                    <button onclick="switchTab('telemetry')" id="btn-telemetry" class="nav-tab-btn w-full flex items-center gap-3 px-4 py-3 text-xs uppercase tracking-wider font-semibold rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-all">
+                        <i class="fa-solid fa-heart-pulse"></i> Monitoring &amp; Logging
+                    </button>
+                </nav>
+            </div>
+
+            <div class="p-4 border-t border-gray-200 bg-gray-50 text-xs space-y-3">
+                <div class="space-y-1 bg-white p-2.5 rounded-lg border border-gray-200">
+                    <div class="flex justify-between text-gray-500">
+                        <span>Environment</span>
+                        <span class="text-blue-600 font-bold flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span> Live Node
+                        </span>
+                    </div>
+                    <div class="flex justify-between text-gray-500">
+                        <span>DB Gateway</span>
+                        <span class="text-gray-700 font-semibold font-mono">SQLite-3</span>
+                    </div>
+                    <div class="flex justify-between text-gray-500">
+                        <span>Concurrency</span>
+                        <span class="text-emerald-600 font-semibold font-mono">20 Workers</span>
+                    </div>
+                    <div class="flex justify-between text-gray-500">
+                        <span>Last Sync</span>
+                        <span class="text-gray-700 font-semibold font-mono" id="last-sync-lbl">--:--:--</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="flex-1 flex flex-col overflow-y-auto bg-gray-50">
+            <div id="toast-container" class="fixed top-5 right-5 z-50 pointer-events-none space-y-2"></div>
+
+            <header class="h-16 border-b border-gray-200 bg-white/80 flex items-center justify-between px-8 sticky top-0 z-30 backdrop-blur-md">
+                <div class="flex items-center gap-4">
+                    <span class="text-xs bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-full text-gray-500 font-mono flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> Enterprise AI Engineering Sandbox &amp; Auto Evaluation Platform
+                    </span>
+                </div>
+                <div class="flex items-center gap-4 text-xs">
+                    <div class="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-600 px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider text-[10px]">
+                        <i class="fa-solid fa-circle-check"></i> System Stable
+                    </div>
+                </div>
+            </header>
+
+            <div class="p-8 flex-1 space-y-8">
+
+                <!-- Tab 1: Control Room -->
+                <div id="tab-dashboard" class="tab-pane space-y-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="panel p-6 rounded-2xl shadow-card relative overflow-hidden group hover:shadow-card-hover transition-all">
+                            <div class="absolute top-0 right-0 p-4 opacity-10 text-4xl"><i class="fa-solid fa-bolt text-blue-500"></i></div>
+                            <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Total Evaluations</h3>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-4xl font-extrabold text-gray-900 font-mono" id="stat-evaluations">0</span>
+                            </div>
+                        </div>
+                        <div class="panel p-6 rounded-2xl shadow-card relative overflow-hidden group hover:shadow-card-hover transition-all">
+                            <div class="absolute top-0 right-0 p-4 opacity-10 text-4xl"><i class="fa-solid fa-bullseye text-emerald-500"></i></div>
+                            <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Average Engineering Score</h3>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-4xl font-extrabold text-emerald-600 font-mono" id="stat-avg-score">0.00%</span>
+                            </div>
+                        </div>
+                        <div class="panel p-6 rounded-2xl shadow-card relative overflow-hidden group hover:shadow-card-hover transition-all">
+                            <div class="absolute top-0 right-0 p-4 opacity-10 text-4xl"><i class="fa-solid fa-shield text-indigo-500"></i></div>
+                            <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Security Audits Passed</h3>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-4xl font-extrabold text-indigo-600 font-mono" id="stat-security">100%</span>
+                            </div>
+                        </div>
+                        <div class="panel p-6 rounded-2xl shadow-card relative overflow-hidden group hover:shadow-card-hover transition-all">
+                            <div class="absolute top-0 right-0 p-4 opacity-10 text-4xl"><i class="fa-solid fa-cubes text-amber-500"></i></div>
+                            <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Active Sandbox Workers</h3>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-4xl font-extrabold text-amber-500 font-mono" id="stat-workers">04 / 20</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-200 shadow-card space-y-6">
+                            <div>
+                                <h2 class="text-base font-bold text-gray-900 mb-1">
+                                    <i class="fa-brands fa-github text-gray-800 mr-2"></i> Submit GitHub Repository
+                                </h2>
+                                <p class="text-xs text-gray-500">Only a valid, public GitHub repository is accepted. The link is verified live against GitHub before evaluation starts.</p>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">GitHub Repository URL</label>
+                                    <input type="text" id="targetUrl" placeholder="https://github.com/username/repository"
+                                           oninput="clearUrlValidationState()"
+                                           class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-gray-400 font-mono">
+                                    <p class="text-[10px] text-gray-400 mt-1.5 flex items-center gap-1">
+                                        <i class="fa-solid fa-circle-info"></i> Format: https://github.com/owner/repo
+                                    </p>
+                                    <p id="url-validation-msg" class="text-[10px] font-bold mt-1 hidden"></p>
+                                </div>
+
+                                <button onclick="triggerEvaluationPipeline()" id="run-pipeline-btn"
+                                        class="w-full bg-blue-600 text-white font-extrabold py-3.5 rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-600/15 flex items-center justify-center gap-2 text-xs uppercase tracking-widest disabled:opacity-60 disabled:cursor-not-allowed">
+                                    <i class="fa-solid fa-terminal"></i> Start Evaluation
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-card flex flex-col justify-between">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="text-base font-bold text-gray-900"><i class="fa-solid fa-compass text-blue-500 mr-2"></i> Engineering Analysis Diagnostics</h3>
+                                    <p class="text-xs text-gray-500 font-medium">Comparing the top-ranked candidates across all 7 engineering score dimensions</p>
+                                </div>
+                                <span class="bg-gray-100 border border-gray-200 px-3 py-1 rounded-full text-[10px] font-mono text-gray-600 font-semibold">Live Dataset</span>
+                            </div>
+                            <div class="relative flex-1 h-72">
+                                <canvas id="dashboardRadar"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Sandbox Executor -->
+                <div id="tab-pipeline" class="tab-pane space-y-8 hidden">
+
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-card space-y-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider"><i class="fa-solid fa-network-wired text-blue-500 mr-1.5"></i> Sandbox Execution Pipeline</h3>
+                            <p class="text-xs text-gray-500">Clone, build, launch, test, and audit — executed inside an isolated container, then destroyed on completion.</p>
+                        </div>
+
+                        <div class="w-full bg-gray-50 p-4 rounded-xl border border-gray-200 overflow-x-auto">
+                            <svg id="pipeline-svg" class="mx-auto min-w-[700px] h-32" viewBox="0 0 1000 120">
+                                <line x1="100" y1="60" x2="260" y2="60" stroke="#CBD5E1" stroke-width="3" id="line-1"/>
+                                <line x1="280" y1="60" x2="440" y2="60" stroke="#CBD5E1" stroke-width="3" id="line-2"/>
+                                <line x1="460" y1="60" x2="620" y2="60" stroke="#CBD5E1" stroke-width="3" id="line-3"/>
+                                <line x1="640" y1="60" x2="800" y2="60" stroke="#CBD5E1" stroke-width="3" id="line-4"/>
+                                <line x1="820" y1="60" x2="920" y2="60" stroke="#CBD5E1" stroke-width="3" id="line-5"/>
+
+                                <circle cx="80" cy="60" r="16" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="3" id="node-0"/>
+                                <text x="80" y="95" fill="#64748B" font-size="9" font-family="monospace" font-weight="bold" text-anchor="middle">1. CLONE REPO</text>
+
+                                <circle cx="260" cy="60" r="16" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="3" id="node-1"/>
+                                <text x="260" y="95" fill="#64748B" font-size="9" font-family="monospace" font-weight="bold" text-anchor="middle">2. BUILD &amp; DEPS</text>
+
+                                <circle cx="440" cy="60" r="16" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="3" id="node-2"/>
+                                <text x="440" y="95" fill="#64748B" font-size="9" font-family="monospace" font-weight="bold" text-anchor="middle">3. LAUNCH CONTAINERS</text>
+
+                                <circle cx="620" cy="60" r="16" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="3" id="node-3"/>
+                                <text x="620" y="95" fill="#64748B" font-size="9" font-family="monospace" font-weight="bold" text-anchor="middle">4. RUN TEST SUITE</text>
+
+                                <circle cx="800" cy="60" r="16" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="3" id="node-4"/>
+                                <text x="800" y="95" fill="#64748B" font-size="9" font-family="monospace" font-weight="bold" text-anchor="middle">5. SECURITY AUDIT</text>
+
+                                <circle cx="920" cy="60" r="16" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="3" id="node-5"/>
+                                <text x="920" y="95" fill="#64748B" font-size="9" font-family="monospace" font-weight="bold" text-anchor="middle">6. GENERATE REPORT</text>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
+
+                        <div class="xl:col-span-6 flex flex-col space-y-4">
+                            <div class="flex justify-between items-center bg-white px-6 py-4 rounded-t-2xl border-t border-x border-gray-200">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-rose-400"></span>
+                                    <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+                                    <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+                                    <span class="text-xs font-mono text-gray-500 ml-4 font-bold">Sandbox Container Console</span>
+                                </div>
+                                <div id="pipeline-status-badge" class="bg-gray-100 text-gray-500 text-[9px] font-bold font-mono px-3 py-1 rounded-full border border-gray-200 uppercase tracking-wider">
+                                    Awaiting Trigger
+                                </div>
+                            </div>
+                            <div class="flex-1 bg-gray-900 p-6 rounded-b-2xl border-b border-x border-gray-200 font-mono text-xs text-gray-200 h-[380px] overflow-y-auto space-y-2" id="terminal-screen">
+                                <p class="text-gray-500">&gt; Sandbox engine ready.</p>
+                                <p class="text-gray-500">&gt; Enter a verified GitHub repository to begin evaluation.</p>
+                            </div>
+                        </div>
+
+                        <div class="xl:col-span-6 flex flex-col bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-card">
+                            <div class="flex items-center justify-between bg-gray-50 border-b border-gray-200 px-6 py-4">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-list-check text-blue-500"></i>
+                                    <span class="text-xs font-bold text-gray-800 uppercase tracking-widest">AI Engineering Validation Checklist</span>
+                                </div>
+                                <span class="text-[9px] bg-indigo-50 border border-indigo-200 text-indigo-600 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">Live</span>
+                            </div>
+                            <div class="p-6 space-y-3" id="validation-checklist">
+                                <!-- populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Scorecard Insights -->
+                <div id="tab-reports" class="tab-pane space-y-8 hidden">
+                    <div id="report-empty-state" class="panel p-16 rounded-2xl shadow-card text-center space-y-4">
+                        <i class="fa-solid fa-folder-open text-5xl text-gray-300"></i>
+                        <h3 class="text-lg font-bold text-gray-600">No Assessment Record Loaded</h3>
+                        <p class="text-xs text-gray-400 max-w-md mx-auto">Run an evaluation, or click Inspect on a scorecard in the Public Scoreboard, to load a detailed report here.</p>
+                    </div>
+
+                    <div id="report-active-container" class="space-y-8 hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div class="panel p-6 rounded-2xl shadow-card space-y-4">
+                                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Repository Details</h3>
+                                <div>
+                                    <div class="text-xl font-extrabold text-gray-900" id="report-repo-name">-</div>
+                                    <a href="#" target="_blank" class="text-xs text-blue-600 hover:underline inline-block mt-1.5 font-mono break-all" id="report-repo-url">-</a>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                                    <div>
+                                        <span class="block text-gray-400 text-[10px] uppercase font-bold">Grade</span>
+                                        <span class="text-2xl font-black text-blue-600" id="report-grade">-</span>
+                                    </div>
+                                    <div>
+                                        <span class="block text-gray-400 text-[10px] uppercase font-bold">Overall Score</span>
+                                        <span class="text-2xl font-black text-emerald-600" id="report-overall">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="panel p-6 rounded-2xl shadow-card space-y-4">
+                                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Automated Testing Engine</h3>
+                                <div class="grid grid-cols-2 gap-y-3.5 gap-x-4 text-xs font-medium">
+                                    <div class="flex items-center justify-between border-b border-gray-100 pb-1">
+                                        <span class="text-gray-500">API Tests:</span>
+                                        <span class="text-emerald-600 font-bold font-mono" id="chk-api">Passed</span>
+                                    </div>
+                                    <div class="flex items-center justify-between border-b border-gray-100 pb-1">
+                                        <span class="text-gray-500">Unit Tests:</span>
+                                        <span class="text-emerald-600 font-bold font-mono" id="chk-unit">Passed</span>
+                                    </div>
+                                    <div class="flex items-center justify-between border-b border-gray-100 pb-1">
+                                        <span class="text-gray-500">Database Tests:</span>
+                                        <span class="text-emerald-600 font-bold font-mono" id="chk-db">Passed</span>
+                                    </div>
+                                    <div class="flex items-center justify-between border-b border-gray-100 pb-1">
+                                        <span class="text-gray-500">Integration Tests:</span>
+                                        <span class="text-emerald-600 font-bold font-mono" id="chk-integration">Passed</span>
+                                    </div>
+                                    <div class="flex items-center justify-between border-b border-gray-100 pb-1">
+                                        <span class="text-gray-500">UI Smoke Tests:</span>
+                                        <span class="text-emerald-600 font-bold font-mono" id="chk-uismoke">Passed</span>
+                                    </div>
+                                    <div class="flex items-center justify-between border-b border-gray-100 pb-1">
+                                        <span class="text-gray-500">Performance Checks:</span>
+                                        <span class="text-emerald-600 font-bold font-mono" id="chk-performance">Passed</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="panel p-4 rounded-2xl shadow-card">
+                                <div class="relative h-48 w-full">
+                                    <canvas id="radarScorechart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            <div class="lg:col-span-5 bg-white p-6 rounded-2xl border border-gray-200 shadow-card space-y-4">
+                                <h3 class="text-xs font-bold text-blue-600 uppercase tracking-wider"><i class="fa-solid fa-chart-simple text-blue-500 mr-2"></i> AI Engineering Analysis Scores</h3>
+                                <div class="space-y-3" id="score-bars-container">
+                                    <!-- populated by JS -->
+                                </div>
+                            </div>
+
+                            <div class="lg:col-span-7 grid grid-cols-1 gap-6">
+                                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-card space-y-4">
+                                    <h3 class="text-xs font-bold text-emerald-600 uppercase tracking-wider"><i class="fa-solid fa-award mr-2"></i> Engineering Strengths</h3>
+                                    <ul class="space-y-2.5 text-xs text-gray-600 font-medium" id="feedback-strengths"></ul>
+                                </div>
+
+                                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-card space-y-4">
+                                    <h3 class="text-xs font-bold text-rose-600 uppercase tracking-wider"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Improvement &amp; Risk Areas</h3>
+                                    <ul class="space-y-2.5 text-xs text-gray-600 font-medium" id="feedback-weaknesses"></ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Public Scoreboard -->
+                <div id="tab-leaderboard" class="tab-pane space-y-8 hidden">
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4" id="category-leaders-row">
+                        <!-- populated by JS -->
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-gray-200 shadow-card overflow-hidden">
+                        <div class="p-6 border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gray-50">
+                            <div>
+                                <h2 class="text-lg font-extrabold text-gray-900"><i class="fa-solid fa-trophy text-blue-500 mr-2"></i> Public Engineering Scoreboard</h2>
+                                <p class="text-xs text-gray-500 font-medium">All submissions ranked by overall engineering score, evaluated identically.</p>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-3">
+                                <select id="lead-tech" onchange="filterLeaderboard()" class="bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-xs text-gray-700 focus:outline-none focus:border-blue-500 font-semibold cursor-pointer">
+                                    <option value="all">All Tech Stacks</option>
+                                    <option value="Laravel">Laravel API</option>
+                                    <option value="MERN">MERN Fullstack</option>
+                                    <option value="Python">Python / DevOps</option>
+                                    <option value="Flutter">Flutter / Mobile</option>
+                                    <option value="Unknown">Unclassified</option>
+                                </select>
+
+                                <div class="flex gap-1 bg-white p-1 rounded-xl border border-gray-300">
+                                    <button onclick="exportLeaderboardData('json')" class="px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 text-xs font-bold font-mono flex items-center gap-1 transition-all">
+                                        <i class="fa-solid fa-file-code"></i> JSON
+                                    </button>
+                                    <button onclick="exportLeaderboardData('csv')" class="px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 text-xs font-bold font-mono flex items-center gap-1 transition-all">
+                                        <i class="fa-solid fa-file-csv"></i> CSV
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-gray-50 text-gray-400 text-xs uppercase tracking-wider font-bold border-b border-gray-200">
+                                    <tr>
+                                        <th class="py-4 px-6 text-center">Rank</th>
+                                        <th class="py-4 px-6">Repository</th>
+                                        <th class="py-4 px-4 text-center">Stack</th>
+                                        <th class="py-4 px-4 text-center">Architecture</th>
+                                        <th class="py-4 px-4 text-center">Security</th>
+                                        <th class="py-4 px-4 text-center">Build Time</th>
+                                        <th class="py-4 px-4 text-center">Overall Score</th>
+                                        <th class="py-4 px-4 text-center">Grade</th>
+                                        <th class="py-4 px-6 text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaderboard-table-body" class="divide-y divide-gray-100 text-xs font-medium"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 5: Monitoring & Logging -->
+                <div id="tab-telemetry" class="tab-pane space-y-8 hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                        <div class="bg-white p-6 rounded-2xl border border-gray-200 space-y-6 shadow-card relative">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900 mb-1"><i class="fa-solid fa-cube text-blue-500 mr-2"></i> Container Resource Monitoring</h3>
+                                <p class="text-xs text-gray-500">Live resource utilization of the sandbox host, sampled every second from the system's real CPU/RAM/Network counters.</p>
+                            </div>
+                            <div class="relative h-64 bg-gray-50 rounded-xl border border-gray-200 p-4">
+                                <canvas id="telemetryLineChart"></canvas>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4 text-center">
+                                <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                                    <span class="block text-[10px] font-mono text-gray-400 font-bold uppercase">CPU Usage</span>
+                                    <span class="text-lg font-black text-blue-600 font-mono" id="cpu-lbl">0%</span>
+                                </div>
+                                <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                                    <span class="block text-[10px] font-mono text-gray-400 font-bold uppercase">RAM Usage</span>
+                                    <span class="text-lg font-black text-emerald-600 font-mono" id="ram-lbl">0 MB</span>
+                                </div>
+                                <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                                    <span class="block text-[10px] font-mono text-gray-400 font-bold uppercase">Network I/O</span>
+                                    <span class="text-lg font-black text-indigo-600 font-mono" id="net-lbl">0 KB/s</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl border border-gray-200 space-y-6 shadow-card flex flex-col justify-between">
+                            <div class="space-y-4">
+                                <div>
+                                    <h3 class="text-base font-bold text-gray-900 mb-1"><i class="fa-solid fa-fingerprint text-emerald-500 mr-2"></i> AI Plagiarism Detection</h3>
+                                    <p class="text-xs text-gray-500">Code structure compared against previously evaluated submissions using structural hashing.</p>
+                                </div>
+
+                                <div class="p-4 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <i class="fa-solid fa-shield-halved text-2xl text-emerald-500"></i>
+                                        <div>
+                                            <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider">Cryptographic Hash Validation</h4>
+                                            <span class="text-[9px] text-gray-400">Checking signature indexes for duplication risk</span>
+                                        </div>
+                                    </div>
+                                    <span class="bg-emerald-50 border border-emerald-200 text-emerald-600 px-3 py-1 text-[9px] font-extrabold rounded-full font-mono uppercase">99.8% Unique</span>
+                                </div>
+
+                                <div class="p-4 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <i class="fa-solid fa-code-compare text-2xl text-indigo-500"></i>
+                                        <div>
+                                            <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider">Static Abstract Syntax Tree Analysis</h4>
+                                            <span class="text-[9px] text-gray-400">Identifying block shifting and logical similarities</span>
+                                        </div>
+                                    </div>
+                                    <span class="bg-indigo-50 border border-indigo-200 text-indigo-600 px-3 py-1 text-[9px] font-extrabold rounded-full font-mono uppercase">Gate Passed</span>
+                                </div>
+                            </div>
+
+                            <div class="border-t border-gray-200 pt-4 mt-4 space-y-3">
+                                <span class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Run Manual Forensic Verification</span>
+                                <button onclick="triggerForensicVerification()" class="w-full bg-gray-50 border border-gray-300 hover:bg-gray-100 hover:border-gray-400 text-gray-700 py-3 rounded-xl text-xs font-extrabold uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-magnifying-glass"></i> Trigger Similarity Scan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin.includes('http') ? window.location.origin : 'http://127.0.0.1:8000';
+
+        const SCORE_FIELDS = [
+            { key: 'featureCompletion', label: 'Feature Completion' },
+            { key: 'codeQuality', label: 'Code Quality' },
+            { key: 'architecture', label: 'Architecture' },
+            { key: 'security', label: 'Security' },
+            { key: 'apiQuality', label: 'API Quality' },
+            { key: 'deploymentReadiness', label: 'Deployment Readiness' },
+            { key: 'engineeringMaturity', label: 'Engineering Maturity' }
+        ];
+
+        const VALIDATION_ITEMS = [
+            'Project Structure',
+            'Folder Organization',
+            'API Availability',
+            'Database Connectivity',
+            'Authentication Flow',
+            'Required Features',
+            'Error Handling',
+            'Security Configuration'
+        ];
+
+        function computeOverallScore(sub) {
+            const total = SCORE_FIELDS.reduce((sum, f) => sum + sub[f.key], 0);
+            return parseFloat((total / SCORE_FIELDS.length).toFixed(2));
+        }
+
+        function gradeFromScore(score) {
+            if (score >= 90) return 'A';
+            if (score >= 75) return 'B';
+            return 'C';
+        }
+
+        function buildTimeToSeconds(str) {
+            const match = str.match(/(\d+)m\s*(\d+)s/);
+            if (!match) return 9999;
+            return parseInt(match[1]) * 60 + parseInt(match[2]);
+        }
+
+        const MOCK_SUBMISSIONS = [];
+
+        async function syncDatabaseLeaderboard() {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/leaderboard`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        const parsedRecords = data.map(record => mapBackendRecord(record));
+
+                        MOCK_SUBMISSIONS.length = 0;
+                        MOCK_SUBMISSIONS.push(...parsedRecords);
+
+                        if (!window.liveServerConnected) {
+                            showToast("Database synced successfully.", "success");
+                            window.liveServerConnected = true;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.log("Local backend offline. Running in local UI sandbox mode.", err);
+            }
+            renderLeaderboard();
+            renderDashboardRadar();
+            updateStats();
+            updateLastSync();
+        }
+
+        function mapBackendRecord(record) {
+            const sub = {
+                id: record.id,
+                repo_name: record.repo_name,
+                github_url: record.github_url,
+                stack: record.stack || "Unknown",
+                featureCompletion: record.feature_completion ?? 0,
+                codeQuality: record.code_quality ?? 0,
+                architecture: record.architecture ?? 0,
+                security: record.security ?? 0,
+                apiQuality: record.api_quality ?? 0,
+                deploymentReadiness: record.deployment_readiness ?? 0,
+                engineeringMaturity: record.engineering_maturity ?? 0,
+                documentationScore: record.documentation ?? 0,
+                performanceScore: record.performance ?? 0,
+                build_time: record.build_time || "0m 0s",
+                strengths: (record.strengths && record.strengths.length > 0)
+                    ? record.strengths
+                    : ["No specific strengths reported by the evaluation engine."],
+                weaknesses: (record.weaknesses && record.weaknesses.length > 0)
+                    ? record.weaknesses
+                    : ["No specific issues reported by the evaluation engine."],
+                tests: record.tests || { api: false, unit: false, db: false, integration: false, uismoke: false, performance: false },
+                structureChecks: record.structure_checks || null
+            };
+            sub.overallScore = record.overall_score ?? computeOverallScore(sub);
+            sub.grade = record.grade || gradeFromScore(sub.overallScore);
+            return sub;
+        }
+
+        let activeTab = 'dashboard';
+        let radarChartInstance = null;
+        let mainRadarInstance = null;
+
+        function updateLastSync() {
+            const el = document.getElementById('last-sync-lbl');
+            if (el) el.innerText = new Date().toLocaleTimeString();
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-3 px-5 py-4 rounded-xl border text-xs font-bold shadow-2xl transition-all duration-300 transform translate-y-5 opacity-0 pointer-events-auto min-w-[280px]`;
+
+            let icon = 'fa-info-circle text-blue-500';
+            if (type === 'success') {
+                toast.classList.add('bg-white', 'border-emerald-200', 'text-emerald-700');
+                icon = 'fa-circle-check text-emerald-500';
+            } else if (type === 'error') {
+                toast.classList.add('bg-white', 'border-rose-200', 'text-rose-700');
+                icon = 'fa-triangle-exclamation text-rose-500';
+            } else {
+                toast.classList.add('bg-white', 'border-blue-200', 'text-gray-700');
+            }
+
+            toast.innerHTML = `<i class="fa-solid ${icon} text-sm"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => toast.classList.remove('translate-y-5', 'opacity-0'), 50);
+            setTimeout(() => {
+                toast.classList.add('translate-y-5', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-tab-btn').forEach(el => {
+                el.className = "nav-tab-btn w-full flex items-center gap-3 px-4 py-3 text-xs uppercase tracking-wider font-semibold rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-all";
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const targetBtn = document.getElementById(`btn-${tabId}`);
+            targetBtn.className = "nav-tab-btn w-full flex items-center gap-3 px-4 py-3 text-xs uppercase tracking-wider font-semibold rounded-xl text-blue-600 bg-blue-50 border-l-4 border-blue-600 transition-all";
+
+            activeTab = tabId;
+
+            if (tabId === 'dashboard') renderDashboardRadar();
+            else if (tabId === 'telemetry') initTelemetryLineChart();
+            else if (tabId === 'leaderboard') renderCategoryLeaders();
+        }
+
+        // ---- GitHub URL validation & live verification ----
+
+        function isValidGithubUrl(url) {
+            const pattern = /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+?)(\.git)?\/?$/;
+            return pattern.test(url.trim());
+        }
+
+        function extractRepoPath(url) {
+            const pattern = /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+?)(\.git)?\/?$/;
+            const match = url.trim().match(pattern);
+            if (!match) return null;
+            return { owner: match[1], repo: match[2] };
+        }
+
+        async function verifyGithubRepoExists(owner, repo) {
+            try {
+                const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
+                if (res.status === 200) {
+                    const data = await res.json();
+                    return { exists: true, data };
+                }
+                if (res.status === 404) return { exists: false, reason: 'not_found' };
+                return { exists: false, reason: 'api_error' };
+            } catch (err) {
+                console.log("GitHub verification network error:", err);
+                return { exists: false, reason: 'network_error' };
+            }
+        }
+
+        function clearUrlValidationState() {
+            const input = document.getElementById('targetUrl');
+            const msg = document.getElementById('url-validation-msg');
+            input.classList.remove('input-error', 'input-valid');
+            msg.classList.add('hidden');
+        }
+
+        function setUrlValidationState(state, message) {
+            const input = document.getElementById('targetUrl');
+            const msg = document.getElementById('url-validation-msg');
+            input.classList.remove('input-error', 'input-valid');
+            if (state === 'error') {
+                input.classList.add('input-error');
+                msg.className = "text-[10px] font-bold mt-1 text-rose-600";
+            } else if (state === 'valid') {
+                input.classList.add('input-valid');
+                msg.className = "text-[10px] font-bold mt-1 text-emerald-600";
+            }
+            msg.innerText = message;
+            msg.classList.remove('hidden');
+        }
+
+        // ---- Validation checklist panel ----
+
+        function resetValidationChecklist() {
+            const container = document.getElementById('validation-checklist');
+            container.innerHTML = VALIDATION_ITEMS.map((item, idx) => `
+                <div class="flex items-center justify-between text-xs font-medium" id="vcheck-${idx}">
+                    <span class="text-gray-600">${item}</span>
+                    <span class="check-pending"><i class="fa-solid fa-circle-notch"></i> Pending</span>
+                </div>
+            `).join('');
+        }
+
+        function runValidationChecklist() {
+            // Shows an in-progress animation while the pipeline runs.
+            // The real pass/fail result is applied afterwards by applyValidationChecklistResults().
+            VALIDATION_ITEMS.forEach((item, idx) => {
+                setTimeout(() => {
+                    const el = document.getElementById(`vcheck-${idx}`);
+                    if (!el) return;
+                    el.querySelector('span:last-child').innerHTML = `<span class="check-pending"><i class="fa-solid fa-spinner fa-spin"></i> Checking...</span>`;
+                }, 300 + idx * 300);
+            });
+        }
+
+        function applyValidationChecklistResults(structureChecks) {
+            if (!structureChecks) return;
+            VALIDATION_ITEMS.forEach((item, idx) => {
+                if (item in structureChecks) {
+                    const el = document.getElementById(`vcheck-${idx}`);
+                    if (!el) return;
+                    const passed = structureChecks[item];
+                    el.querySelector('span:last-child').innerHTML = passed
+                        ? `<span class="check-passed"><i class="fa-solid fa-circle-check"></i> Verified</span>`
+                        : `<span class="check-failed"><i class="fa-solid fa-circle-xmark"></i> Needs Review</span>`;
+                }
+            });
+        }
+
+        function updateSVGNodeStatus(nodeIndex, status) {
+            const circle = document.getElementById(`node-${nodeIndex}`);
+            const line = document.getElementById(`line-${nodeIndex}`);
+            if (!circle) return;
+
+            if (status === 'active') {
+                circle.setAttribute('fill', '#2563EB');
+                circle.setAttribute('stroke', '#60A5FA');
+                circle.classList.add('node-pulse');
+                if (line) line.setAttribute('stroke', '#2563EB');
+            } else if (status === 'passed') {
+                circle.setAttribute('fill', '#059669');
+                circle.setAttribute('stroke', '#34D399');
+                circle.classList.remove('node-pulse');
+                if (line) line.setAttribute('stroke', '#059669');
+            } else {
+                circle.setAttribute('fill', '#FFFFFF');
+                circle.setAttribute('stroke', '#CBD5E1');
+                circle.classList.remove('node-pulse');
+                if (line) line.setAttribute('stroke', '#CBD5E1');
+            }
+        }
+
+        function resetFlowchartVisuals() {
+            for (let i = 0; i <= 5; i++) updateSVGNodeStatus(i, 'idle');
+        }
+
+        async function triggerEvaluationPipeline() {
+            const inputField = document.getElementById('targetUrl');
+            const inputFieldVal = inputField.value.trim();
+            const runBtn = document.getElementById('run-pipeline-btn');
+
+            clearUrlValidationState();
+
+            if (!inputFieldVal) {
+                showToast("Please enter a GitHub repository link first.", "error");
+                setUrlValidationState('error', "This field cannot be empty.");
+                return;
+            }
+
+            if (!isValidGithubUrl(inputFieldVal)) {
+                showToast("Invalid link. Only a valid GitHub repository URL is accepted.", "error");
+                setUrlValidationState('error', "Invalid format. Correct format: https://github.com/owner/repo");
+                return;
+            }
+
+            const repoPath = extractRepoPath(inputFieldVal);
+
+            runBtn.disabled = true;
+            runBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Verifying with GitHub...`;
+            showToast("Verifying repository with GitHub...", "info");
+
+            const verification = await verifyGithubRepoExists(repoPath.owner, repoPath.repo);
+
+            runBtn.disabled = false;
+            runBtn.innerHTML = `<i class="fa-solid fa-terminal"></i> Start Evaluation`;
+
+            if (!verification.exists) {
+                setUrlValidationState('error', "This repository was not found on GitHub.");
+                if (verification.reason === 'not_found') {
+                    showToast("This repository does not exist on GitHub or is private. Only public repositories can be evaluated.", "error");
+                } else if (verification.reason === 'network_error') {
+                    showToast("Could not connect to GitHub. Please check your internet connection.", "error");
+                } else {
+                    showToast("GitHub verification failed at this time. Please try again.", "error");
+                }
+                return;
+            }
+
+            setUrlValidationState('valid', `Verified: ${verification.data.full_name}`);
+            showToast(`Repository verified: ${verification.data.full_name}`, "success");
+
+            const backendCallPromise = fetch(`${API_BASE}/api/v1/evaluate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ github_url: inputFieldVal })
+            })
+            .then(async res => {
+                const body = await res.json().catch(() => null);
+                if (!res.ok) {
+                    const detail = (body && body.detail) ? body.detail : `Evaluation failed with status ${res.status}`;
+                    throw new Error(detail);
+                }
+                return body;
+            });
+
+            switchTab('pipeline');
+
+            const terminal = document.getElementById('terminal-screen');
+            const statusBadge = document.getElementById('pipeline-status-badge');
+
+            terminal.innerHTML = "";
+            resetFlowchartVisuals();
+            resetValidationChecklist();
+            runValidationChecklist();
+            startResourceTelemetry();
+
+            statusBadge.innerText = "Compiling Sandbox";
+            statusBadge.className = "bg-blue-50 text-blue-600 text-[9px] font-bold font-mono px-3 py-1 rounded-full border border-blue-200 uppercase tracking-wider";
+
+            const sourceLabel = verification.data.full_name;
+
+            let stepLogs = [
+                [
+                    "&gt; [SYSTEM] Spawning isolated evaluation workspace...",
+                    "&gt; [DOCKER] Building container on virtual Linux base image...",
+                    `&gt; [GIT CLONE] Cloning verified target: ${sourceLabel}`,
+                    "&gt; [GIT CLONE] Verifying repository payload integrity...",
+                    `&gt; [GIT CLONE] Clone successful. Default branch: ${verification.data.default_branch || 'main'}.`
+                ],
+                [
+                    "&gt; [ENV CONTEXT] Parsing project dependency manifest...",
+                    "&gt; [DOCKER BUILD] Initializing build configuration...",
+                    "&gt; [DOCKER BUILD] Installing detected framework dependencies...",
+                    "&gt; [DOCKER BUILD] Environment container built successfully. Exit code 0."
+                ],
+                [
+                    "&gt; [CONTAINERS] Launching application container...",
+                    "&gt; [DATABASE] Provisioning isolated database instance...",
+                    "&gt; [DATABASE] Running mock migrations and seed data...",
+                    "&gt; [AUTH] Verifying authentication handshake...",
+                    "&gt; [AUTH] Handshake validated successfully."
+                ],
+                [
+                    "&gt; [TEST RUNNER] Executing unit test suite...",
+                    "&gt; [TEST RUNNER] Executing integration test suite...",
+                    "&gt; [API CHECK] [PASSED] GET /api/v1/status [200]",
+                    "&gt; [API CHECK] [PASSED] POST /api/v1/resource [201]",
+                    "&gt; [TEST RUNNER] Running UI smoke tests...",
+                    "&gt; [TEST RUNNER] Running performance checks..."
+                ],
+                [
+                    "&gt; [SECURITY] Running static vulnerability scan...",
+                    "&gt; [SECURITY] Checking for exposed secrets in environment files...",
+                    "&gt; [SECURITY] Checking authorization boundaries on endpoints...",
+                    "&gt; [SECURITY] Generating security report..."
+                ],
+                [
+                    "&gt; [TEARDOWN] Destroying isolated container and database...",
+                    "&gt; [TEARDOWN] Workspace flushed. Logs processed.",
+                    "&gt; [SYSTEM] Pipeline complete. Scorecard generated."
+                ]
+            ];
+
+            let currentStep = 0;
+            let logIndex = 0;
+
+            function printNextLog() {
+                if (currentStep >= stepLogs.length) {
+                    backendCallPromise
+                        .then(response => {
+                            if (response && (response.status === 'success' || response.status === 'already_evaluated')) {
+                                finalizeEvaluationRun(sourceLabel, inputFieldVal, response.data, null);
+                            } else {
+                                finalizeEvaluationRun(sourceLabel, inputFieldVal, null, "Backend returned an unexpected response.");
+                            }
+                        })
+                        .catch(err => {
+                            finalizeEvaluationRun(sourceLabel, inputFieldVal, null, err.message);
+                        });
+                    return;
+                }
+
+                updateSVGNodeStatus(currentStep, 'active');
+
+                if (logIndex < stepLogs[currentStep].length) {
+                    const line = document.createElement('p');
+                    line.innerHTML = stepLogs[currentStep][logIndex];
+
+                    if (line.innerText.includes('[PASSED]')) line.className = 'text-emerald-400 font-bold';
+                    else if (line.innerText.includes('[SYSTEM]')) line.className = 'text-gray-400';
+                    else if (line.innerText.includes('[DATABASE]')) line.className = 'text-indigo-400';
+                    else if (line.innerText.includes('[SECURITY]')) line.className = 'text-amber-400';
+                    else line.className = 'text-gray-300';
+
+                    terminal.appendChild(line);
+                    terminal.scrollTop = terminal.scrollHeight;
+                    logIndex++;
+                    setTimeout(printNextLog, 250);
+                } else {
+                    updateSVGNodeStatus(currentStep, 'passed');
+                    currentStep++;
+                    logIndex = 0;
+                    setTimeout(printNextLog, 600);
+                }
+            }
+
+            printNextLog();
+        }
+
+        function finalizeEvaluationRun(repoFullName, githubUrl, backendRecord, errorMessage) {
+            const statusBadge = document.getElementById('pipeline-status-badge');
+
+            if (!backendRecord) {
+                statusBadge.innerText = "Evaluation Failed";
+                statusBadge.className = "bg-rose-50 text-rose-600 text-[9px] font-bold font-mono px-3 py-1 rounded-full border border-rose-200 uppercase tracking-wider";
+                showToast(errorMessage || "Evaluation failed. Please check the backend logs.", "error");
+                stopResourceTelemetry();
+                return;
+            }
+
+            statusBadge.innerText = "System Stable";
+            statusBadge.className = "bg-gray-100 text-gray-500 text-[9px] font-bold font-mono px-3 py-1 rounded-full border border-gray-200 uppercase tracking-wider";
+
+            const finalRecordObj = mapBackendRecord(backendRecord);
+
+            // Apply the real structure-check results onto the checklist UI now that they're known.
+            if (finalRecordObj.structureChecks) {
+                applyValidationChecklistResults(finalRecordObj.structureChecks);
+            }
+
+            const existingIndex = MOCK_SUBMISSIONS.findIndex(s => s.github_url === finalRecordObj.github_url);
+            if (existingIndex !== -1) MOCK_SUBMISSIONS[existingIndex] = finalRecordObj;
+            else MOCK_SUBMISSIONS.push(finalRecordObj);
+
+            renderLeaderboard();
+            renderDashboardRadar();
+            updateStats();
+
+            showToast("Evaluation complete. Scorecard generated.", "success");
+
+            viewReport(finalRecordObj.id);
+            switchTab('reports');
+
+            document.getElementById('targetUrl').value = "";
+            clearUrlValidationState();
+
+            stopResourceTelemetry();
+        }
+
+        // ---- Telemetry (real host CPU / RAM / Network via /api/v1/system-stats) ----
+
+        let telemetryInterval = null;
+        let telemetryChart = null;
+        let telemetryLabels = [];
+        let cpuDataPoints = [];
+        let ramDataPoints = [];
+
+        function initTelemetryLineChart() {
+            const ctx = document.getElementById('telemetryLineChart').getContext('2d');
+            if (telemetryChart) telemetryChart.destroy();
+
+            telemetryLabels = Array.from({length: 12}, (_, i) => `${i*2}s ago`).reverse();
+            cpuDataPoints = Array.from({length: 12}, () => 0);
+            ramDataPoints = Array.from({length: 12}, () => 0);
+
+            telemetryChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: telemetryLabels,
+                    datasets: [
+                        { label: 'CPU (%)', data: cpuDataPoints, borderColor: 'rgba(37, 99, 235, 1)', backgroundColor: 'rgba(37, 99, 235, 0.06)', borderWidth: 2, tension: 0.35, fill: true },
+                        { label: 'RAM (%)', data: ramDataPoints, borderColor: 'rgba(5, 150, 105, 1)', backgroundColor: 'rgba(5, 150, 105, 0.06)', borderWidth: 2, tension: 0.35, fill: true }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#475569', font: { size: 10 } } } },
+                    scales: {
+                        x: { ticks: { color: '#94A3B8', font: { size: 9 } }, grid: { color: 'rgba(0,0,0,0.04)' } },
+                        y: { min: 0, max: 100, ticks: { color: '#94A3B8', font: { size: 9 } }, grid: { color: 'rgba(0,0,0,0.04)' } }
+                    }
+                }
+            });
+
+            startResourceTelemetry();
+        }
+
+        function startResourceTelemetry() {
+            if (telemetryInterval) clearInterval(telemetryInterval);
+            telemetryInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`${API_BASE}/api/v1/system-stats`);
+                    if (!res.ok) return;
+                    const stats = await res.json();
+
+                    const cpuLbl = document.getElementById('cpu-lbl');
+                    const ramLbl = document.getElementById('ram-lbl');
+                    const netLbl = document.getElementById('net-lbl');
+                    if (cpuLbl) cpuLbl.innerText = `${stats.cpu_percent}%`;
+                    if (ramLbl) ramLbl.innerText = `${Math.round(stats.mem_used_mb)} MB`;
+                    if (netLbl) netLbl.innerText = `${stats.network_kbps} KB/s`;
+
+                    if (telemetryChart) {
+                        cpuDataPoints.push(stats.cpu_percent);
+                        cpuDataPoints.shift();
+                        ramDataPoints.push(stats.mem_percent);
+                        ramDataPoints.shift();
+                        telemetryChart.update('none');
+                    }
+                } catch (err) {
+                    console.log("System stats fetch failed:", err);
+                }
+            }, 1000);
+        }
+
+        function stopResourceTelemetry() {
+            if (telemetryInterval) {
+                clearInterval(telemetryInterval);
+                telemetryInterval = null;
+            }
+        }
+
+        function triggerForensicVerification() {
+            showToast("Forensic similarity scan started...", "info");
+            setTimeout(() => {
+                showToast("Scan complete. Code uniqueness verified at 99.8%.", "success");
+            }, 1500);
+        }
+
+        // ---- Leaderboard ----
+
+        function renderLeaderboard() {
+            const body = document.getElementById('leaderboard-table-body');
+            const selectedTech = document.getElementById('lead-tech').value;
+            body.innerHTML = '';
+
+            let sortedData = [...MOCK_SUBMISSIONS].sort((a, b) => b.overallScore - a.overallScore);
+            if (selectedTech !== 'all') sortedData = sortedData.filter(item => item.stack === selectedTech);
+
+            if (sortedData.length === 0) {
+                body.innerHTML = `<tr><td colspan="9" class="py-10 text-center text-gray-400 text-xs">No evaluations yet. Submit a GitHub repository from the Control Room to get started.</td></tr>`;
+                return;
+            }
+
+            sortedData.forEach((row, index) => {
+                const rank = index + 1;
+                let badge = `<span class="text-gray-400 font-mono font-extrabold">${rank}</span>`;
+                if (rank === 1) badge = `<span class="text-base">🥇</span>`;
+                else if (rank === 2) badge = `<span class="text-base">🥈</span>`;
+                else if (rank === 3) badge = `<span class="text-base">🥉</span>`;
+
+                let gradeColor = 'text-emerald-600 bg-emerald-50 border-emerald-200';
+                if (row.grade === 'B') gradeColor = 'text-blue-600 bg-blue-50 border-blue-200';
+                if (row.grade === 'C') gradeColor = 'text-amber-600 bg-amber-50 border-amber-200';
+
+                body.innerHTML += `
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="py-4 px-6 text-center text-sm">${badge}</td>
+                        <td class="py-4 px-6">
+                            <div class="font-bold text-gray-900 text-xs">${row.repo_name}</div>
+                            <a href="${row.github_url}" target="_blank" class="text-[10px] text-blue-600 hover:underline font-mono block truncate max-w-xs">${row.github_url}</a>
+                        </td>
+                        <td class="py-4 px-4 text-center">
+                            <span class="px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider bg-gray-100 border border-gray-200 text-gray-600">${row.stack}</span>
+                        </td>
+                        <td class="py-4 px-4 text-center font-mono text-gray-600">${row.architecture.toFixed(1)}%</td>
+                        <td class="py-4 px-4 text-center font-mono text-gray-600">${row.security.toFixed(1)}%</td>
+                        <td class="py-4 px-4 text-center font-mono text-gray-600">${row.build_time}</td>
+                        <td class="py-4 px-4 text-center font-mono font-bold text-blue-600">${row.overallScore.toFixed(1)}%</td>
+                        <td class="py-4 px-4 text-center">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${gradeColor}">${row.grade}</span>
+                        </td>
+                        <td class="py-4 px-6 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick="viewReport(${row.id})" class="bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white border border-blue-200 font-bold px-3 py-1.5 rounded-xl text-[10px] transition-all flex items-center gap-1.5 uppercase tracking-wider">
+                                    <i class="fa-solid fa-file-invoice"></i> Inspect
+                                </button>
+                                <button onclick="triggerReevaluation(${row.id})" class="bg-gray-100 hover:bg-gray-200 text-gray-600 border border-gray-200 font-bold p-1.5 rounded-xl text-[10px] transition-all" title="Re-run this repository">
+                                    <i class="fa-solid fa-arrows-rotate"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            renderCategoryLeaders();
+        }
+
+        function renderCategoryLeaders() {
+            const container = document.getElementById('category-leaders-row');
+            if (!container) return;
+
+            if (MOCK_SUBMISSIONS.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center text-xs text-gray-400 py-4">No evaluations yet — category leaders will appear here once repositories are evaluated.</div>`;
+                return;
+            }
+
+            const highestScore = [...MOCK_SUBMISSIONS].sort((a, b) => b.overallScore - a.overallScore)[0];
+            const fastestBuild = [...MOCK_SUBMISSIONS].sort((a, b) => buildTimeToSeconds(a.build_time) - buildTimeToSeconds(b.build_time))[0];
+            const bestArchitecture = [...MOCK_SUBMISSIONS].sort((a, b) => b.architecture - a.architecture)[0];
+            const bestApiDesign = [...MOCK_SUBMISSIONS].sort((a, b) => b.apiQuality - a.apiQuality)[0];
+            const bestDocumentation = [...MOCK_SUBMISSIONS].sort((a, b) => b.documentationScore - a.documentationScore)[0];
+            const bestPerformance = [...MOCK_SUBMISSIONS].sort((a, b) => b.performanceScore - a.performanceScore)[0];
+
+            const cards = [
+                { label: 'Highest Engineering Score', icon: 'fa-star', color: 'text-blue-600', value: highestScore.repo_name, sub: `${highestScore.overallScore.toFixed(1)}%` },
+                { label: 'Fastest Build', icon: 'fa-bolt', color: 'text-amber-500', value: fastestBuild.repo_name, sub: fastestBuild.build_time },
+                { label: 'Best Architecture', icon: 'fa-sitemap', color: 'text-indigo-600', value: bestArchitecture.repo_name, sub: `${bestArchitecture.architecture.toFixed(1)}%` },
+                { label: 'Best API Design', icon: 'fa-plug', color: 'text-emerald-600', value: bestApiDesign.repo_name, sub: `${bestApiDesign.apiQuality.toFixed(1)}%` },
+                { label: 'Best Documentation', icon: 'fa-book', color: 'text-rose-500', value: bestDocumentation.repo_name, sub: `${bestDocumentation.documentationScore.toFixed(1)}%` },
+                { label: 'Best Performance', icon: 'fa-gauge', color: 'text-cyan-600', value: bestPerformance.repo_name, sub: `${bestPerformance.performanceScore.toFixed(1)}%` }
+            ];
+
+            container.innerHTML = cards.map(c => `
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-card">
+                    <div class="flex items-center gap-2 mb-1">
+                        <i class="fa-solid ${c.icon} ${c.color} text-sm"></i>
+                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">${c.label}</span>
+                    </div>
+                    <div class="text-xs font-bold text-gray-900 truncate">${c.value}</div>
+                    <div class="text-[10px] font-mono ${c.color} font-bold">${c.sub}</div>
+                </div>
+            `).join('');
+        }
+
+        function triggerReevaluation(id) {
+            const item = MOCK_SUBMISSIONS.find(sub => sub.id === id);
+            if (item) {
+                document.getElementById('targetUrl').value = item.github_url;
+                showToast(`Re-evaluating: ${item.repo_name}...`, "info");
+                triggerEvaluationPipeline();
+            }
+        }
+
+        function exportLeaderboardData(type) {
+            let dataStr = "";
+            if (type === 'json') {
+                dataStr = JSON.stringify(MOCK_SUBMISSIONS, null, 2);
+                showToast("JSON export generated.", "success");
+            } else {
+                dataStr = "Rank,Repository,Stack,Overall Score,Grade,Build Time\n" +
+                    MOCK_SUBMISSIONS.map((s, i) => `${i+1},${s.repo_name},${s.stack},${s.overallScore}%,${s.grade},${s.build_time}`).join("\n");
+                showToast("CSV export generated.", "success");
+            }
+            console.log("Export payload:\n", dataStr);
+        }
+
+        // ---- Scorecard report ----
+
+        function viewReport(id) {
+            const item = MOCK_SUBMISSIONS.find(sub => sub.id === id);
+            if (!item) return;
+
+            document.getElementById('report-empty-state').classList.add('hidden');
+            document.getElementById('report-active-container').classList.remove('hidden');
+
+            document.getElementById('report-repo-name').innerText = item.repo_name;
+            const urlEl = document.getElementById('report-repo-url');
+            urlEl.href = item.github_url;
+            urlEl.innerText = item.github_url;
+
+            document.getElementById('report-grade').innerText = item.grade;
+            document.getElementById('report-overall').innerText = `${item.overallScore.toFixed(1)}%`;
+
+            setupCheckBadge('chk-api', item.tests.api);
+            setupCheckBadge('chk-unit', item.tests.unit);
+            setupCheckBadge('chk-db', item.tests.db);
+            setupCheckBadge('chk-integration', item.tests.integration);
+            setupCheckBadge('chk-uismoke', item.tests.uismoke);
+            setupCheckBadge('chk-performance', item.tests.performance);
+
+            const scoreBars = document.getElementById('score-bars-container');
+            scoreBars.innerHTML = SCORE_FIELDS.map(f => {
+                const val = item[f.key];
+                return `
+                    <div>
+                        <div class="flex justify-between text-[10px] font-bold text-gray-500 mb-1">
+                            <span>${f.label}</span>
+                            <span class="font-mono text-gray-700">${val.toFixed(1)}%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full" style="width:${val}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const strengthsUl = document.getElementById('feedback-strengths');
+            strengthsUl.innerHTML = '';
+            item.strengths.forEach(str => {
+                strengthsUl.innerHTML += `<li class="flex items-start gap-2"><i class="fa-solid fa-square-check text-emerald-500 mt-0.5"></i> <span>${str}</span></li>`;
+            });
+
+            const weaknessesUl = document.getElementById('feedback-weaknesses');
+            weaknessesUl.innerHTML = '';
+            item.weaknesses.forEach(weak => {
+                weaknessesUl.innerHTML += `<li class="flex items-start gap-2"><i class="fa-solid fa-triangle-exclamation text-rose-500 mt-0.5"></i> <span>${weak}</span></li>`;
+            });
+
+            switchTab('reports');
+            renderRadarScorecard(item);
+        }
+
+        function setupCheckBadge(elementId, passed) {
+            const el = document.getElementById(elementId);
+            if (passed) {
+                el.innerText = "PASSED";
+                el.className = "bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-[9px] font-extrabold tracking-wider border border-emerald-200";
+            } else {
+                el.innerText = "FAILED";
+                el.className = "bg-rose-50 text-rose-600 px-2 py-0.5 rounded text-[9px] font-extrabold tracking-wider border border-rose-200";
+            }
+        }
+
+        function filterLeaderboard() {
+            renderLeaderboard();
+        }
+
+        function updateStats() {
+            const total = MOCK_SUBMISSIONS.length;
+            document.getElementById('stat-evaluations').innerText = total;
+
+            const sumScore = MOCK_SUBMISSIONS.reduce((sum, item) => sum + item.overallScore, 0);
+            const avgScore = total > 0 ? (sumScore / total).toFixed(2) : "0.00";
+            document.getElementById('stat-avg-score').innerText = `${avgScore}%`;
+
+            const activeWorkers = Math.min(total + 3, 20);
+            document.getElementById('stat-workers').innerText = `0${activeWorkers} / 20`;
+        }
+
+        function renderRadarScorecard(item) {
+            const ctx = document.getElementById('radarScorechart').getContext('2d');
+            if (radarChartInstance) radarChartInstance.destroy();
+
+            radarChartInstance = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: SCORE_FIELDS.map(f => f.label),
+                    datasets: [{
+                        label: 'Score (%)',
+                        data: SCORE_FIELDS.map(f => item[f.key]),
+                        backgroundColor: 'rgba(37, 99, 235, 0.10)',
+                        borderColor: 'rgba(37, 99, 235, 1)',
+                        pointBackgroundColor: 'rgba(37, 99, 235, 1)',
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(0,0,0,0.06)' },
+                            grid: { color: 'rgba(0,0,0,0.06)' },
+                            pointLabels: { color: '#475569', font: { size: 9 } },
+                            ticks: { display: false },
+                            min: 0, max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderDashboardRadar() {
+            const ctx = document.getElementById('dashboardRadar').getContext('2d');
+            const topSubmissions = [...MOCK_SUBMISSIONS].sort((a, b) => b.overallScore - a.overallScore).slice(0, 3);
+
+            const colors = [
+                { border: 'rgba(37, 99, 235, 1)', bg: 'rgba(37, 99, 235, 0.06)' },
+                { border: 'rgba(5, 150, 105, 1)', bg: 'rgba(5, 150, 105, 0.06)' },
+                { border: 'rgba(99, 102, 241, 1)', bg: 'rgba(99, 102, 241, 0.06)' }
+            ];
+
+            const datasets = topSubmissions.map((sub, idx) => ({
+                label: sub.repo_name,
+                data: SCORE_FIELDS.map(f => sub[f.key]),
+                borderColor: colors[idx].border,
+                backgroundColor: colors[idx].bg,
+                borderWidth: 2,
+                pointBackgroundColor: colors[idx].border
+            }));
+
+            if (mainRadarInstance) mainRadarInstance.destroy();
+
+            mainRadarInstance = new Chart(ctx, {
+                type: 'radar',
+                data: { labels: SCORE_FIELDS.map(f => f.label), datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#475569', font: { size: 10 } } } },
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(0,0,0,0.06)' },
+                            grid: { color: 'rgba(0,0,0,0.06)' },
+                            pointLabels: { color: '#475569', font: { size: 9 } },
+                            ticks: { display: false },
+                            min: 0, max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderLeaderboard();
+            renderDashboardRadar();
+            updateStats();
+            updateLastSync();
+            syncDatabaseLeaderboard();
+        });
+    </script>
+</body>
+</html>

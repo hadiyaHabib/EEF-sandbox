@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+docker==7.1.0
+gitpython
+python-multipart
+pydantic
+psutil
+requests==2.31.0
+urllib3<2
+python-dotenv
